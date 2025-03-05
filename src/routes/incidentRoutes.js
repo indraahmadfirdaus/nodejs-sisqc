@@ -1,6 +1,6 @@
-import express from 'express';
-import incidentController from '../controllers/incidentController';
-import auth from '../middleware/auth';
+const express = require('express');
+const incidentController = require('../controllers/incidentController');
+const auth = require('../middleware/auth');
 const router = express.Router();
 
 /**
@@ -74,4 +74,4 @@ router.get('/:id', authenticateToken, incidentController.getIncidentById);
 
 
 
-export default router;
+module.exports = router;
