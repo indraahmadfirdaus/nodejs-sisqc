@@ -1,0 +1,7 @@
+const APROVAL_STATUS = {
+    SUBMMITED: 'SUBMMITED',
+    APPROVED: 'APPROVED',
+    REJECTED: 'REJECTED'
+}
+
+module.exports = APROVAL_STATUS
