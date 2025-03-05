@@ -7,6 +7,9 @@ const { port, beUrl } = require('./config/env');
 const errorHandler = require('./middleware/errorHandler');
 const userRoutes = require('./routes/userRoutes');
 const goodsRoutes = require('./routes/goodsRoutes');
+const qcReportRoutes = require('./routes/qcReportRoutes');
+const incidentRoutes = require('./routes/incidentRoutes');
+
 
 const morgan = require('morgan')
 const env = require('./config/env');
@@ -60,6 +63,8 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 app.use('/api/users', userRoutes);
 app.use('/api/goods', goodsRoutes);
+app.use('/api/qc-reports', qcReportRoutes);
+app.use('/api/incidents', incidentRoutes);
 
 app.use(errorHandler);
 
