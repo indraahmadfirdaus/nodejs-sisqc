@@ -70,7 +70,7 @@ router.get('/', auth, incidentController.getAllIncidents);
  *       401:
  *         description: Unauthorized
  */
-router.get('/:id', authenticateToken, incidentController.getIncidentById);
+router.get('/:id', auth, incidentController.getIncidentById);
 
 
 
