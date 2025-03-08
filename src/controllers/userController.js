@@ -40,11 +40,13 @@ const userController = {
             ResponseAPI.success(res, {
                 token,
                 user: {
-                    id: user._id,
+                    _id: user._id,
                     name: user.name,
                     email: user.email,
                     photo_url: user.photo_url,
-                    role: user.role
+                    role: user.role,
+                    id_number: user.id_number,
+                    registration_status: user.registration_status
                 }
             });
         } catch (error) {
@@ -61,21 +63,30 @@ const userController = {
         }
     },
 
+    async getAll(req, res, next) {
+        try {
+            const user = await User.find();
+            ResponseAPI.success(res, user);
+        } catch (error) {
+            next(error)
+        }
+    },
 
-    
+
+
     async updateProfile(req, res, next) {
         try {
-            const { name, email, password } = req.body;
-            
-            const user = await User.findById(req.user._id).select('-password');
-            
+            const { name, email, password, id_number } = req.body;
+
+            const user = await User.findById(req.user._id)
+
             // Handle image upload if file exists
             if (req.file) {
                 const urlUploadResult = await imageUpload(req.file)
 
                 user.photo_url = urlUploadResult
             }
-    
+
             // Update other fields if provided
             if (password) {
                 user.password = password;
@@ -86,10 +97,14 @@ const userController = {
             if (email) {
                 user.email = email;
             }
-    
+
+            if (id_number) {
+                user.id_number = id_number;
+            }
+
             await user.save();
-            
-            ResponseAPI.success(res, user);
+
+            ResponseAPI.success(res, null);
         } catch (error) {
             // Clean up uploaded file if exists
             if (req.file && fs.existsSync(req.file.path)) {
@@ -115,7 +130,39 @@ const userController = {
         } catch (error) {
             next(error)
         }
-    }
+    },
+
+    async updateApprovalStatus(req, res, next) {
+        try {
+            const { userId } = req.params;
+            const { status } = req.body;
+
+            // Validate status
+            if (!['APPROVED', 'REJECTED'].includes(status)) {
+                return ResponseAPI.error(res, 'Invalid approval status', 400);
+            }
+
+            const user = await User.findById(userId);
+            if (!user) {
+                return ResponseAPI.error(res, 'User not found', 404);
+            }
+
+            user.registration_status = status;
+            await user.save();
+
+            ResponseAPI.success(res, {
+                message: `User ${status} successfully`,
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    registration_status: user.registration_status
+                }
+            });
+        } catch (error) {
+            next(error);
+        }
+    },
 };
 
 module.exports = userController;

@@ -48,8 +48,42 @@ router.post('/', auth, upload.single('photo'), goodsController.createGoods);
  *     responses:
  *       200:
  *         description: Goods retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                         example: "1234567890"
+ *                       sku_code:
+ *                         type: string
+ *                         example: "SKU001"
+ *                       name:
+ *                         type: string
+ *                         example: "Product Name"
+ *                       description:
+ *                         type: string
+ *                         example: "Product Description"
+ *                       photo:
+ *                         type: string
+ *                         example: "photo_url.jpg"
+ *                       created_at:
+ *                         type: string
+ *                         format: date-time
+ *                       updated_at:
+ *                         type: string
+ *                         format: date-time
  */
-router.get('/', auth, goodsController.getAllGoods);
+router.get('/', goodsController.getAllGoods);
 
 /**
  * @swagger
@@ -69,7 +103,7 @@ router.get('/', auth, goodsController.getAllGoods);
  *       200:
  *         description: Goods retrieved successfully
  */
-router.get('/:id', auth, goodsController.getGoodsById);
+router.get('/:id', goodsController.getGoodsById);
 
 /**
  * @swagger

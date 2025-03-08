@@ -16,25 +16,21 @@ const qcReportController = require('../controllers/qcReportController');
  *       200:
  *         description: List of QC reports retrieved successfully
  */
-router.get('/', auth, qcReportController.getAllReports);
+router.get('/',
+    auth,
+    qcReportController.getAllReports);
 
 /**
  * @swagger
  * /api/qc-reports/{id}:
  *   get:
  *     tags: [QC Reports]
- *     summary: Get a single QC report
+ *     summary: Get QC Reports by id
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
  *     responses:
  *       200:
- *         description: QC report retrieved successfully
+ *         description: QC Report retrieved successfully
  */
 router.get('/:id', auth, qcReportController.getReportById);
 
@@ -49,21 +45,27 @@ router.get('/:id', auth, qcReportController.getReportById);
  *     requestBody:
  *       required: true
  *       content:
- *         multipart/form-data:
+ *         application/json:
  *           schema:
  *             type: object
  *             required:
  *               - title
- *               - qcReportItems
+ *               - items
  *             properties:
  *               title:
  *                 type: string
+ *               description:
+ *                 type: string
  *               report_notes:
  *                 type: string
- *               qcReportItems:
+ *               report_date:
+ *                  type: date string
+ *               items:
  *                 type: array
  *                 items:
  *                   type: object
+ *                   required:
+ *                     - goods_id
  *                   properties:
  *                     goods_id:
  *                       type: string
@@ -71,28 +73,16 @@ router.get('/:id', auth, qcReportController.getReportById);
  *                       type: number
  *                     rejected_count:
  *                       type: number
- *                     photo:
- *                       type: file
- *               incident:
- *                 type: object
- *                 properties:
- *                   title:
- *                     type: string
- *                   description:
- *                     type: string
- *                   incident_date:
- *                     type: string
- *                     format: date-time
- *                   photo:
- *                     type: file
+ *               photos:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   description: Base64 encoded image string
  *     responses:
  *       201:
  *         description: QC report created successfully
  */
-router.post('/', auth, upload.fields([
-    { name: 'photo' },
-    { name: 'incident_photo' }
-  ]), qcReportController.createReport);
+router.post('/', auth, qcReportController.createReport);
 
 /**
  * @swagger
@@ -110,15 +100,19 @@ router.post('/', auth, upload.fields([
  *           type: string
  *     requestBody:
  *       content:
- *         multipart/form-data:
+ *         application/json:
  *           schema:
  *             type: object
  *             properties:
  *               title:
  *                 type: string
+ *               description:
+ *                 type: string
  *               report_notes:
  *                 type: string
- *               qcReportItems:
+ *               report_date:
+ *                 type: date string
+ *               items:
  *                 type: array
  *                 items:
  *                   type: object
@@ -129,13 +123,17 @@ router.post('/', auth, upload.fields([
  *                       type: number
  *                     rejected_count:
  *                       type: number
- *                     photo:
- *                       type: file
+ *               photos:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   description: Base64 encoded image string
  *     responses:
  *       200:
  *         description: QC report updated successfully
  */
-router.put('/:id', auth, upload.array('photo'), qcReportController.updateReport);
+router.put('/:id', auth, qcReportController.updateReport);
+
 
 /**
  * @swagger

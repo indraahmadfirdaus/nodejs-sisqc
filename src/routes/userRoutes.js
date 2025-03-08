@@ -38,7 +38,7 @@ const ROLES = require('../constant/roles');
  *               data:
  *                 token: "jwt_token_here"
  *                 user:
- *                   id: "user_id"
+ *                   _id: "user_id"
  *                   name: "John Doe"
  *                   email: "john@example.com"
  *                   photo_url: "https://example.com/photo.jpg"
@@ -77,6 +77,20 @@ router.post('/register', userController.register);
 
 /**
  * @swagger
+ * /api/users:
+ *   get:
+ *     tags: [Users]
+ *     summary: Get all users
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile retrieved successfully
+ */
+router.get('/', auth, userController.getAll);
+
+/**
+ * @swagger
  * /api/users/profile:
  *   get:
  *     tags: [Users]
@@ -109,6 +123,8 @@ router.get('/profile', auth, userController.getProfile);
  *                 type: string
  *               password:
  *                 type: string
+ *               id_number:
+ *                 type: string
  *               photo:
  *                 type: file
  *     responses:
@@ -116,5 +132,46 @@ router.get('/profile', auth, userController.getProfile);
  *         description: Profile updated successfully
  */
 router.put('/profile', auth, upload.single('photo'), userController.updateProfile);
+
+/**
+ * @swagger
+ * /api/users/approval/{userId}:
+ *   put:
+ *     tags: [Users]
+ *     summary: Update user approval status
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the user to approve/reject
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [APPROVED, REJECTED]
+ *                 description: Approval status for the user
+ *     responses:
+ *       200:
+ *         description: User approval status updated successfully
+ *       400:
+ *         description: Invalid approval status or missing rejection reason
+ *       403:
+ *         description: Not authorized to update approval status
+ *       404:
+ *         description: User not found
+ */
+router.put('/approval/:userId', auth, authorizeRoles([ROLES.MANAGER]), userController.updateApprovalStatus);
+
 
 module.exports = router;

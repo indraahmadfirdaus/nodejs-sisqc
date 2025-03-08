@@ -34,6 +34,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    registration_status: {
+        type: String,
+        enum : ['PENDING', 'APPROVED', 'REJECTED'],
+        default: 'PENDING'
+    },
 }, {
     timestamps: true
 });

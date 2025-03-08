@@ -6,25 +6,20 @@ const ROLES = require('../constant/roles');
 
 const users = [
     {
-        name: 'John Doe',
-        email: 'john@example.com',
+        name: 'Officer QC',
+        email: 'officerqc@mail.com',
         password: 'password123',
         photo_url: 'https://example.com/john.jpg',
-        role: ROLES.OFFICER
+        role: ROLES.OFFICER,
+        registration_status: 'APPROVED'
     },
     {
-        name: 'Jane Smith',
-        email: 'jane@example.com',
+        name: 'Manager QC',
+        email: 'managerqc@mail.com',
         password: 'password123',
         photo_url: 'https://example.com/jane.jpg',
-        role: ROLES.MANAGER
-    },
-    {
-        name: 'Jaden Smith',
-        email: 'jaden@example.com',
-        password: 'password123',
-        photo_url: 'https://example.com/jaden.jpg',
-        role: ROLES.OFFICER
+        role: ROLES.MANAGER,
+        registration_status: 'APPROVED'
     }
 ];
 
