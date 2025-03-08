@@ -1,72 +1,60 @@
 const models = require('../models');
 const ResponseAPI = require('../utils/response');
-const { imageUpload } = require('../utils/imageUtil');
+const { imageUpload, imageUploadBase64 } = require('../utils/imageUtil');
 const fs = require('fs');
+
 
 const qcReportController = {
   async createReport(req, res, next) {
     try {
-      const { title, report_notes, qcReportItems, incident } = req.body;
+      const { title, report_notes, description, items, photos, report_date } = req.body;
       
-      // Handle QC report items photos
-      const processedItems = await Promise.all(
-        JSON.parse(qcReportItems).map(async (item) => {
-          let photo_url = null;
-          if (req.files && req.files.photo) {
-            const photoFile = req.files.photo.find(
-              (file) => file.fieldname === `photo`
-            );
-            if (photoFile) {
-              photo_url = await imageUpload(photoFile);
-            }
-          }
-          return {
-            ...item,
-            photo_url
-          };
-        })
-      );
-
+      // Process QC report items
+      const qcReportItems = [];
+      let totalApprovedCount = 0;
+      let totalRejectedCount = 0;
+  
+      items.forEach((item, index) => {
+        const approvedCount = parseInt(item.approved_count) || 0;
+        const rejectedCount = parseInt(item.rejected_count) || 0;
+  
+        totalApprovedCount += approvedCount;
+        totalRejectedCount += rejectedCount;
+  
+        qcReportItems.push({
+          goods_id: item.goods_id,
+          approved_count: approvedCount,
+          rejected_count: rejectedCount,
+          index: index + 1
+        });
+      });
+  
+      // Process base64 photos
+      const photoUrls = [];
+      
+      if (photos && photos.length > 0) {
+        for (const base64Image of photos) {
+          const uploadedUrl = await imageUploadBase64(base64Image);
+          photoUrls.push(uploadedUrl);
+        }
+      }
+  
       // Create QC Report
       const qcReport = await models.qcReport.create({
         title,
+        description,
         report_notes,
         reporter_id: req.user._id,
-        qcReportItems: processedItems
+        qcReportItems,
+        approved_count: totalApprovedCount,
+        rejected_count: totalRejectedCount,
+        photo_urls: photoUrls,
+        report_date: report_date || new Date()
       });
-
-      // Handle incident if provided
-      if (incident) {
-        const parsedIncident = JSON.parse(incident);
-        let incident_photo_url = null;
-        
-        if (req.files && req.files.incident_photo) {
-          incident_photo_url = await imageUpload(req.files.incident_photo[0]);
-        }
-
-        const createdIncident = await models.incident.create({
-          title: parsedIncident.title,
-          description: parsedIncident.description,
-          incident_date: parsedIncident.incident_date,
-          photo_url: incident_photo_url,
-          qc_report_id: qcReport._id,
-          reporter_id: req.user._id
-        });
-
-        qcReport.incident_id = createdIncident._id;
-        await qcReport.save();
-      }
-
+  
       ResponseAPI.success(res, qcReport, 201);
+  
     } catch (error) {
-      // Cleanup uploaded files if error occurs
-      if (req.files) {
-        Object.values(req.files).flat().forEach(file => {
-          if (fs.existsSync(file.path)) {
-            fs.unlinkSync(file.path);
-          }
-        });
-      }
       next(error);
     }
   },
@@ -75,7 +63,6 @@ const qcReportController = {
     try {
       const reports = await models.qcReport.find()
         .populate('qcReportItems.goods_id')
-        .populate('incident_id')
         .populate('reporter_id', 'name email');
       
       ResponseAPI.success(res, reports);
@@ -88,7 +75,6 @@ const qcReportController = {
     try {
       const report = await models.qcReport.findById(req.params.id)
         .populate('qcReportItems.goods_id')
-        .populate('incident_id')
         .populate('reporter_id', 'name email');
 
       if (!report) {
@@ -105,7 +91,6 @@ const qcReportController = {
     try {
       const reports = await models.qcReport.find({ reporter_id: req.params.reporterId })
         .populate('qcReportItems.goods_id')
-        .populate('incident_id')
         .populate('reporter_id', 'name email');
 
       if (!reports.length) {
@@ -120,49 +105,76 @@ const qcReportController = {
 
   async updateReport(req, res, next) {
     try {
-      const { title, report_notes, qcReportItems } = req.body;
+      const { title, report_notes, description, items, photos, report_date } = req.body;
       const report = await models.qcReport.findById(req.params.id);
-
+  
       if (!report) {
         return ResponseAPI.error(res, 'QC Report not found', 404);
       }
-
-      // Handle QC report items photos
-      if (qcReportItems) {
-        const processedItems = await Promise.all(
-          JSON.parse(qcReportItems).map(async (item) => {
-            let photo_url = item.photo_url;
-            if (req.files && req.files.length > 0) {
-              const photoFile = req.files.find(
-                (file) => file.fieldname === `photo`
-              );
-              if (photoFile) {
-                photo_url = await imageUpload(photoFile);
-              }
-            }
-            return {
-              ...item,
-              photo_url
-            };
-          })
-        );
-        report.qcReportItems = processedItems;
-      }
-
-      report.title = title || report.title;
-      report.report_notes = report_notes || report.report_notes;
-
-      await report.save();
-
-      ResponseAPI.success(res, report);
-    } catch (error) {
-      if (req.files) {
-        req.files.forEach(file => {
-          if (fs.existsSync(file.path)) {
-            fs.unlinkSync(file.path);
-          }
+  
+      // Process QC report items
+      const qcReportItems = [];
+      let totalApprovedCount = 0;
+      let totalRejectedCount = 0;
+  
+      if (items && items.length > 0) {
+        items.forEach((item, index) => {
+          const approvedCount = parseInt(item.approved_count) || 0;
+          const rejectedCount = parseInt(item.rejected_count) || 0;
+    
+          totalApprovedCount += approvedCount;
+          totalRejectedCount += rejectedCount;
+    
+          qcReportItems.push({
+            goods_id: item.goods_id,
+            approved_count: approvedCount,
+            rejected_count: rejectedCount,
+            index: index + 1
+          });
         });
       }
+  
+      // Process photos based on different scenarios
+      let photoUrls = [];
+      if (photos === null || photos === undefined) {
+        // If no photos sent, keep existing photos
+        photoUrls = report.photo_urls;
+      } else if (photos.length === 0) {
+        // If empty array sent, delete all photos
+        photoUrls = [];
+      } else {
+        // Process new photos
+        for (const photo of photos) {
+          // Check if string is base64
+          const isBase64 = /^data:image\/[a-z]+;base64,/.test(photo);
+          
+          if (isBase64) {
+            // Upload base64 image
+            const uploadedUrl = await imageUploadBase64(photo);
+            photoUrls.push(uploadedUrl);
+          } else {
+            // If it's a URL, add it directly
+            photoUrls.push(photo);
+          }
+        }
+      }
+
+      // Update report
+      report.title = title || report.title;
+      report.description = description || report.description;
+      report.report_notes = report_notes || report.report_notes;
+      report.qcReportItems = qcReportItems.length > 0 ? qcReportItems : report.qcReportItems;
+      report.approval_status = 'SUBMITTED';
+      report.approved_count = totalApprovedCount || report.approved_count;
+      report.rejected_count = totalRejectedCount || report.rejected_count;
+      report.photo_urls = photoUrls;
+      report.report_date = report_date || report.report_date;
+      report.updated_at = new Date();
+  
+      await report.save();
+      ResponseAPI.success(res, report);
+  
+    } catch (error) {
       next(error);
     }
   },
@@ -195,11 +207,6 @@ const qcReportController = {
 
       if (!report) {
         return ResponseAPI.error(res, 'QC Report not found', 404);
-      }
-
-      // Delete associated incident if exists
-      if (report.incident_id) {
-        await models.incident.findByIdAndDelete(report.incident_id);
       }
 
       await report.deleteOne();

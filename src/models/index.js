@@ -1,13 +1,14 @@
-const Incident = require('./Incident.js');
 const User = require('./User.js');
 const QCReport = require('./QCReports.js');
 const Goods = require('./Goods.js');
+const mongoose = require('mongoose');
+
 
 const models = {
-  incident: Incident,
   user: User,
   qcReport: QCReport,
-  goods: Goods
+  goods: Goods,
+  base: mongoose
 };
 
 module.exports = models;

@@ -16,8 +16,9 @@ const qcReportItemSchema = new mongoose.Schema({
     required: true,
     default: 0
   },
-  photo_url: {
-    type: String,
+  index: {
+    type: Number,
+    required: true
   }
 });
 
@@ -25,6 +26,9 @@ const QCReportSchema = new mongoose.Schema({
   title: {
     type: String,
     required: true
+  },
+  description: {
+    type: String,
   },
   report_date: {
     type: Date,
@@ -61,11 +65,11 @@ const QCReportSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
-  incident_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Incident',
+  qcReportItems: [qcReportItemSchema],
+  photo_urls: {
+    type: [String],
+    default: []
   },
-  qcReportItems: [qcReportItemSchema]
 });
 
 const QCReport = mongoose.model('QCReport', QCReportSchema);
