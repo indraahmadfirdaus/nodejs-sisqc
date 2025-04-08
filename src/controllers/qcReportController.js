@@ -8,19 +8,19 @@ const qcReportController = {
   async createReport(req, res, next) {
     try {
       const { title, report_notes, description, items, photos, report_date } = req.body;
-      
+
       // Process QC report items
       const qcReportItems = [];
       let totalApprovedCount = 0;
       let totalRejectedCount = 0;
-  
+
       items.forEach((item, index) => {
         const approvedCount = parseInt(item.approved_count) || 0;
         const rejectedCount = parseInt(item.rejected_count) || 0;
-  
+
         totalApprovedCount += approvedCount;
         totalRejectedCount += rejectedCount;
-  
+
         qcReportItems.push({
           goods_id: item.goods_id,
           approved_count: approvedCount,
@@ -28,17 +28,17 @@ const qcReportController = {
           index: index + 1
         });
       });
-  
+
       // Process base64 photos
       const photoUrls = [];
-      
+
       if (photos && photos.length > 0) {
         for (const base64Image of photos) {
           const uploadedUrl = await imageUploadBase64(base64Image);
           photoUrls.push(uploadedUrl);
         }
       }
-  
+
       // Create QC Report
       const qcReport = await models.qcReport.create({
         title,
@@ -51,9 +51,30 @@ const qcReportController = {
         photo_urls: photoUrls,
         report_date: report_date || new Date()
       });
-  
+
+      await Promise.all([
+        await models.notifications.create({
+          title: 'Laporan QC Baru',
+          content: `Laporan QC baru telah dibuat oleh ${req.user.name}`,
+          user_id: req.user._id,
+          role_type: 'MANAGER',
+          is_read: false,
+          qc_report_id: qcReport._id,
+          notification_type: 'QC_REPORT'
+        }),
+        await models.notifications.create({
+          title: 'Laporan QC Telah Disubmit',
+          content: `Laporan QC baru telah disubmit oleh ${req.user.name}`,
+          user_id: req.user._id,
+          role_type: 'OFFICER',
+          is_read: false,
+          qc_report_id: qcReport._id,
+          notification_type: 'QC_REPORT'
+        })
+      ])
+
       ResponseAPI.success(res, qcReport, 201);
-  
+
     } catch (error) {
       next(error);
     }
@@ -64,7 +85,7 @@ const qcReportController = {
       const reports = await models.qcReport.find()
         .populate('qcReportItems.goods_id')
         .populate('reporter_id', 'name email');
-      
+
       ResponseAPI.success(res, reports);
     } catch (error) {
       next(error);
@@ -107,24 +128,24 @@ const qcReportController = {
     try {
       const { title, report_notes, description, items, photos, report_date } = req.body;
       const report = await models.qcReport.findById(req.params.id);
-  
+
       if (!report) {
         return ResponseAPI.error(res, 'QC Report not found', 404);
       }
-  
+
       // Process QC report items
       const qcReportItems = [];
       let totalApprovedCount = 0;
       let totalRejectedCount = 0;
-  
+
       if (items && items.length > 0) {
         items.forEach((item, index) => {
           const approvedCount = parseInt(item.approved_count) || 0;
           const rejectedCount = parseInt(item.rejected_count) || 0;
-    
+
           totalApprovedCount += approvedCount;
           totalRejectedCount += rejectedCount;
-    
+
           qcReportItems.push({
             goods_id: item.goods_id,
             approved_count: approvedCount,
@@ -133,7 +154,7 @@ const qcReportController = {
           });
         });
       }
-  
+
       // Process photos based on different scenarios
       let photoUrls = [];
       if (photos === null || photos === undefined) {
@@ -147,7 +168,7 @@ const qcReportController = {
         for (const photo of photos) {
           // Check if string is base64
           const isBase64 = /^data:image\/[a-z]+;base64,/.test(photo);
-          
+
           if (isBase64) {
             // Upload base64 image
             const uploadedUrl = await imageUploadBase64(photo);
@@ -170,10 +191,32 @@ const qcReportController = {
       report.photo_urls = photoUrls;
       report.report_date = report_date || report.report_date;
       report.updated_at = new Date();
-  
+
       await report.save();
+
+      await Promise.all([
+        models.notifications.create({
+          title: 'Laporan QC Telah Diperbarui',
+          content: `Laporan QC telah diperbarui oleh ${req.user.name}`,
+          user_id: req.user._id,
+          role_type: 'MANAGER',
+          is_read: false,
+          qc_report_id: report._id,
+          notification_type: 'QC_REPORT'
+        }),
+        models.notifications.create({
+          title: 'Laporan QC Telah Direvisi',
+          content: `Laporan QC telah direvisi oleh ${req.user.name}`,
+          user_id: req.user._id,
+          role_type: 'OFFICER',
+          is_read: false,
+          qc_report_id: report._id,
+          notification_type: 'QC_REPORT'
+        })
+      ])
+
       ResponseAPI.success(res, report);
-  
+
     } catch (error) {
       next(error);
     }
@@ -194,6 +237,16 @@ const qcReportController = {
       report.approved_at = Date.now();
 
       await report.save();
+
+      await models.notifications.create({
+        title: approval_status === 'APPROVED' ? 'Laporan QC Telah Diterima' : 'Laporan QC Telah Ditolak',
+        content: `Laporan QC telah ${approval_status === 'APPROVED' ? 'diterima' : 'ditolak'} oleh ${req.user.name}`,
+        user_id: report.reporter_id,
+        role_type: 'OFFICER',
+        is_read: false,
+        qc_report_id: report._id,
+        notification_type: 'QC_REPORT'
+      });
 
       ResponseAPI.success(res, report);
     } catch (error) {

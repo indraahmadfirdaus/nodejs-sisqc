@@ -9,6 +9,7 @@ const userRoutes = require('./routes/userRoutes');
 const goodsRoutes = require('./routes/goodsRoutes');
 const qcReportRoutes = require('./routes/qcReportRoutes');
 const analyticRoutes = require('./routes/analyticRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 
 const morgan = require('morgan')
@@ -73,6 +74,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/goods', goodsRoutes);
 app.use('/api/qc-reports', qcReportRoutes);
 app.use('/api/analytics', analyticRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.use(errorHandler);
 
