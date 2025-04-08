@@ -8,6 +8,7 @@ const FormData = require('form-data');
 const fs = require('fs');
 const env = require('../config/env');
 const { imageUpload } = require('../utils/imageUtil');
+const models = require('../models');
 
 
 const generateToken = (user) => {
@@ -125,6 +126,16 @@ const userController = {
                     id_number: req.body.id_number
                 }
             );
+
+            await models.notifications.create({
+                title: 'Akun Officer Baru',
+                content: 'Akun Officer telah dibuat dan menunggu approval',
+                user_id: user._id,
+                role_type: 'MANAGER',
+                is_read: false,
+                qc_report_id: null,
+                notification_type: 'REGISTRATION'
+              });
 
             ResponseAPI.success(res, user);
         } catch (error) {
