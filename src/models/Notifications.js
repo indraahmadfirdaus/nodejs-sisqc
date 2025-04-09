@@ -24,7 +24,6 @@ const notificationSchema = new mongoose.Schema({
   qc_report_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'QCReport',
-    required: true
   },
   notification_type: {
     type: String
